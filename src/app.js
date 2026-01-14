@@ -3,9 +3,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const sequelize = require("./config/db");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("../swagger/swagger.json");
+const swaggerDocument = require("../swagger");
 const authRoutes = require("./routes/auth");
-const employeeRoutes = require("./routes/employee");
+const employeeRoutes = require("./routes/employee.routes");
 
 require("dotenv").config();
 
@@ -20,7 +20,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // REST routes
 app.use("/api/auth", authRoutes);
-app.use("/api/employees", employeeRoutes);
+app.use("/api", employeeRoutes);
 
 // DB Test
 sequelize

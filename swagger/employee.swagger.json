@@ -1,0 +1,65 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HRMS Employee API",
+    "version": "1.0.0"
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/api/employees/create": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Create employee",
+        "security": [
+          { "BearerAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "email",
+                  "employee_code",
+                  "designation",
+                  "joining_date"
+                ],
+                "properties": {
+                  "first_name": { "type": "string", "example": "Santanu" },
+                  "last_name": { "type": "string", "example": "Sahoo" },
+                  "email": { "type": "string", "example": "santanu@gmail.com" },
+                  "employee_code": { "type": "string", "example": "EMP001" },
+                  "designation": { "type": "string", "example": "Engineer" },
+                  "joining_date": { "type": "string", "format": "date" },
+                  "has_system_access": { "type": "boolean", "example": true },
+                  "role_id": { "type": "integer", "example": 2 },
+                  "username": { "type": "string", "example": "santanu.sahoo" },
+                  "password": { "type": "string", "example": "123456" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Employee created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  }
+}
