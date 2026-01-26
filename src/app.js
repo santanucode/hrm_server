@@ -1,31 +1,56 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const sequelize = require("./config/db");
-const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("../swagger");
-const authRoutes = require("./routes/auth");
-const employeeRoutes = require("./routes/employee.routes");
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
 
-require("dotenv").config();
+import swaggerDocument from "../swagger/index.js";
+import sequelize from "./config/db.js";
+import authRoutes from "./routes/auth.js";
+import employeeRoutes from "./routes/employee.routes.js";
+import permissionRoute from "./routes/permission.routes.js";
+import roleRoutes from "./routes/role.routes.js";
+
+dotenv.config();
 
 const app = express();
 
+/* ================= Middleware ================= */
 app.use(cors());
-app.use(helmet());
+
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    originAgentCluster: false,
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:"],
+        "font-src": ["'self'", "data:"],
+      },
+    },
+  }),
+);
+
 app.use(express.json());
 
-// Swagger
+/* ================= Swagger ================= */
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// REST routes
+/* ================= Routes ================= */
 app.use("/api/auth", authRoutes);
 app.use("/api", employeeRoutes);
+app.use("/api", roleRoutes);
 
-// DB Test
+app.use("/api/permissions", permissionRoute);
+
+/* ================= DB Test ================= */
 sequelize
   .authenticate()
-  .then(() => console.log("DB connected"))
-  .catch((err) => console.error("DB connection error:", err));
+  .then(() => console.log("✅ DB connected"))
+  .catch((err) => console.error("❌ DB connection error:", err));
 
-module.exports = app;
+export default app;

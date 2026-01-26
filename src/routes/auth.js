@@ -1,10 +1,11 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
+import express from "express";
+import jwt from "jsonwebtoken";
 
-const User = require("../models/user.model");
-const Role = require("../models/role.model");
+import User from "../models/auth/user.model.js";
+import Role from "../models/auth/role.model.js";
+import Permission from "../models/auth/permission.model.js";
 
-const { comparePassword } = require("../utils/bcrypt");
+import { comparePassword } from "../utils/bcrypt.js";
 
 const router = express.Router();
 
@@ -14,35 +15,61 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({
       where: { email },
-      include: [Role],
+      include: [
+        {
+          model: Role,
+          include: [
+            {
+              model: Permission,
+              attributes: ["code"],
+              through: { attributes: [] },
+            },
+          ],
+        },
+      ],
     });
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     const validPassword = await comparePassword(password, user.password);
-
-    if (!validPassword)
+    if (!validPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-    if (!user.is_active)
+    if (!user.is_active) {
       return res.status(403).json({ message: "User inactive" });
+    }
+
+    const role = user.Role ? user.Role : null;
+
+    const permissions = user.Role?.Permissions?.map((p) => p.code) || [];
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.Role.name },
+      {
+        id: user.id,
+        email: user.email,
+        role_id: user.Role.id,
+        role: user.Role.name,
+        permissions: permissions,
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
 
-    res.json({
+    return res.json({
       id: user.id,
       email: user.email,
       username: user.username,
+      role_id: user.Role.id,
       role: user.Role.name,
+      permissions,
       token,
     });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
-module.exports = router;
+export default router;

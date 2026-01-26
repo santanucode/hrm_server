@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "HRMS Employee API",
+    "title": "HRMS Employee Draft API",
     "version": "1.0.0"
   },
   "components": {
@@ -14,12 +14,88 @@
     }
   },
   "paths": {
-    "/api/employees/create": {
+    "/api/employees": {
+      "get": {
+        "tags": ["Employees"],
+        "summary": "Get employee list",
+        "description": "Fetch paginated employee list with basic HR details",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "example": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "example": 10 }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "Santanu"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee list fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "employee_code": { "type": "string" },
+                          "first_name": { "type": "string" },
+                          "last_name": { "type": "string" },
+                          "gender": { "type": "string" },
+                          "email": { "type": "string" },
+                          "employee_type": { "type": "string" },
+                          "designation": { "type": "string" },
+                          "role": { "type": "string" },
+                          "is_active": { "type": "boolean" }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "total_pages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+
+    "/api/employees/basic-info": {
       "post": {
         "tags": ["Employees"],
-        "summary": "Create employee",
+        "summary": "Create employee basic info (Step 1)",
+        "description": "Creates employee with basic personal information",
         "security": [
-          { "BearerAuth": [] }
+          {
+            "BearerAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -27,25 +103,42 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "first_name",
-                  "last_name",
-                  "email",
-                  "employee_code",
-                  "designation",
-                  "joining_date"
-                ],
+                "required": ["first_name", "last_name", "email", "phone"],
                 "properties": {
-                  "first_name": { "type": "string", "example": "Santanu" },
-                  "last_name": { "type": "string", "example": "Sahoo" },
-                  "email": { "type": "string", "example": "santanu@gmail.com" },
-                  "employee_code": { "type": "string", "example": "EMP001" },
-                  "designation": { "type": "string", "example": "Engineer" },
-                  "joining_date": { "type": "string", "format": "date" },
-                  "has_system_access": { "type": "boolean", "example": true },
-                  "role_id": { "type": "integer", "example": 2 },
-                  "username": { "type": "string", "example": "santanu.sahoo" },
-                  "password": { "type": "string", "example": "123456" }
+                  "first_name": {
+                    "type": "string",
+                    "example": "Santanu"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "example": "Sahoo"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "Male"
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "example": "1995-06-15"
+                  },
+                  "celebrate_dob": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "example": "1995-06-15"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "santanu@gmail.com"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "9876543210"
+                  }
                 }
               }
             }
@@ -53,11 +146,740 @@
         },
         "responses": {
           "201": {
-            "description": "Employee created"
+            "description": "Basic info saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Basic info saved successfully"
+                    },
+                    "employee_id": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "next_step": {
+                      "type": "integer",
+                      "example": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already exists"
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
           }
+        }
+      },
+      "put": {
+        "tags": ["Employees"],
+        "summary": "Edit employee basic info",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["employee_id"],
+                "properties": {
+                  "employee_id": { "type": "integer" },
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" },
+                  "gender": { "type": "string" },
+                  "date_of_birth": { "type": "string", "format": "date" },
+                  "phone": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated successfully" } }
+      }
+    },
+
+    "/api/employees/job-info": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Update employee job profile (Step 2)",
+        "description": "Updates employee job-related information",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employee_id"],
+                "properties": {
+                  "employee_id": {
+                    "type": "integer",
+                    "example": 12
+                  },
+                  "employee_code": {
+                    "type": "string",
+                    "example": "EMP-0012"
+                  },
+                  "designation": {
+                    "type": "string",
+                    "example": "Software Engineer"
+                  },
+                  "department": {
+                    "type": "string",
+                    "example": "Engineering"
+                  },
+                  "employee_type": {
+                    "type": "string",
+                    "example": "Full-Time"
+                  },
+                  "role_id": {
+                    "type": "integer",
+                    "example": 7
+                  },
+                  "joining_date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2024-01-15"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job info updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Job info updated successfully"
+                    },
+                    "employee_id": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "next_step": {
+                      "type": "integer",
+                      "example": 3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Employee not found"
+          },
+          "409": {
+            "description": "Employee code already exists"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Edit employee job info",
+        "tags": ["Employees"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["employee_id"],
+                "properties": {
+                  "employee_id": { "type": "integer" },
+                  "employee_code": { "type": "string" },
+                  "designation": { "type": "string" },
+                  "department": { "type": "string" },
+                  "role_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+
+    "/api/employees/system-access": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Step 3: Create system access for employee",
+        "description": "Creates login credentials for an employee using employee email and role",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employee_id", "username", "password"],
+                "properties": {
+                  "employee_id": {
+                    "type": "integer",
+                    "example": 12
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": "santanu"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "123456"
+                  },
+                  "is_active": {
+                    "type": "boolean",
+                    "example": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "System access created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "System access created successfully"
+                    },
+                    "employee_id": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "user_id": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "current_step": {
+                      "type": "integer",
+                      "example": 3
+                    },
+                    "next_step": {
+                      "type": "integer",
+                      "example": 4
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Role not assigned"
+          },
+          "404": {
+            "description": "Employee not found"
+          },
+          "409": {
+            "description": "Username or email already exists"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Edit system access",
+        "tags": ["Employees"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["employee_id"],
+                "properties": {
+                  "employee_id": { "type": "integer" },
+                  "username": { "type": "string" },
+                  "role_id": { "type": "integer" },
+                  "is_active": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      }
+    },
+
+    "/api/employees/personal-details": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Step 4: Add employee personal details",
+        "description": "Create or update employee personal information",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employee_id"],
+                "properties": {
+                  "employee_id": {
+                    "type": "integer",
+                    "example": 12
+                  },
+                  "father_name": {
+                    "type": "string",
+                    "example": "Ramesh Sahoo"
+                  },
+                  "mother_name": {
+                    "type": "string",
+                    "example": "Sunita Sahoo"
+                  },
+                  "marital_status": {
+                    "type": "string",
+                    "example": "Married"
+                  },
+                  "spouse_name": {
+                    "type": "string",
+                    "example": "Anita Sahoo"
+                  },
+                  "nationality": {
+                    "type": "string",
+                    "example": "Indian"
+                  },
+                  "blood_group": {
+                    "type": "string",
+                    "example": "O+"
+                  },
+                  "emergency_contact_name": {
+                    "type": "string",
+                    "example": "Brother"
+                  },
+                  "emergency_contact_phone": {
+                    "type": "string",
+                    "example": "9876543210"
+                  },
+                  "aadhar_number": {
+                    "type": "string",
+                    "example": "123412341234"
+                  },
+                  "pan_number": {
+                    "type": "string",
+                    "example": "ABCDE1234F"
+                  },
+                  "current_address": {
+                    "type": "string",
+                    "example": "Bhubaneswar, Odisha"
+                  },
+                  "permanent_address": {
+                    "type": "string",
+                    "example": "Cuttack, Odisha"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Personal details saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Personal details saved successfully"
+                    },
+                    "employee_id": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "next_step": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Employee not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+
+    "/api/employees/education": {
+      "post": {
+        "tags": ["Education"],
+        "summary": "Step 5: Add employee education details",
+        "description": "Add one or more education records for an employee",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employee_id", "education"],
+                "properties": {
+                  "employee_id": {
+                    "type": "integer",
+                    "example": 12
+                  },
+                  "education": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["qualification", "institute"],
+                      "properties": {
+                        "qualification": {
+                          "type": "string",
+                          "example": "B.Tech"
+                        },
+                        "institute": {
+                          "type": "string",
+                          "example": "KIIT University"
+                        },
+                        "board_university": {
+                          "type": "string",
+                          "example": "BPUT"
+                        },
+                        "year_of_passing": {
+                          "type": "integer",
+                          "example": 2019
+                        },
+                        "percentage": {
+                          "type": "number",
+                          "example": 72.5
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Education details saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Education details saved successfully"
+                    },
+                    "employee_id": {
+                      "type": "integer",
+                      "example": 12
+                    },
+                    "next_step": {
+                      "type": "integer",
+                      "example": 6
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Employee not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+
+    "/api/employees/education/{id}": {
+      "put": {
+        "summary": "Edit education",
+        "tags": ["Education"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "qualification": { "type": "string" },
+                  "institute": { "type": "string" },
+                  "year_of_passing": { "type": "integer" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete education",
+        "tags": ["Education"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true }]
+      }
+    },
+
+    "/api/employees/employee-experience": {
+      "post": {
+        "summary": "Add employee experience",
+        "tags": ["Employee Experience"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employee_id",
+                  "company_name",
+                  "job_title",
+                  "start_date"
+                ],
+                "properties": {
+                  "employee_id": { "type": "integer", "example": 1 },
+                  "company_name": { "type": "string", "example": "Infosys" },
+                  "job_title": {
+                    "type": "string",
+                    "example": "Software Engineer"
+                  },
+                  "employment_type": {
+                    "type": "string",
+                    "enum": ["Full-time", "Part-time", "Contract", "Internship"]
+                  },
+                  "start_date": { "type": "string", "format": "date" },
+                  "end_date": { "type": "string", "format": "date" },
+                  "is_current": { "type": "boolean" },
+                  "responsibilities": { "type": "string" },
+                  "reason_for_leaving": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Experience added successfully" }
+        }
+      }
+    },
+
+    "/api/employees/employee-experience/{id}": {
+      "put": {
+        "summary": "Update employee experience",
+        "tags": ["Employee Experience"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "company_name": { "type": "string" },
+                  "job_title": { "type": "string" },
+                  "employment_type": { "type": "string" },
+                  "start_date": { "type": "string", "format": "date" },
+                  "end_date": { "type": "string", "format": "date" },
+                  "is_current": { "type": "boolean" },
+                  "responsibilities": { "type": "string" },
+                  "reason_for_leaving": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Experience updated successfully" },
+          "404": { "description": "Experience not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete employee experience",
+        "tags": ["Employee Experience"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Experience deleted successfully" },
+          "404": { "description": "Experience not found" }
+        }
+      }
+    },
+
+    "/api/employees/employee-experience/{employee_id}": {
+      "get": {
+        "summary": "Get employee experience list",
+        "tags": ["Employee Experience"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Experience list fetched" }
+        }
+      }
+    },
+
+    "/api/employee-documents": {
+      "post": {
+        "summary": "Upload employee document",
+        "tags": ["Employee Documents"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employee_id",
+                  "document_title",
+                  "document_type",
+                  "file"
+                ],
+                "properties": {
+                  "employee_id": { "type": "integer", "example": 1 },
+                  "document_title": {
+                    "type": "string",
+                    "example": "Aadhar Card"
+                  },
+                  "document_type": {
+                    "type": "string",
+                    "enum": [
+                      "Aadhar",
+                      "PAN",
+                      "Passport",
+                      "Resume",
+                      "Offer Letter",
+                      "Appointment Letter",
+                      "Experience Letter",
+                      "Education Certificate",
+                      "Other"
+                    ]
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Document uploaded successfully" }
+        }
+      }
+    },
+
+    "/api/employees/employee-documents/{employee_id}": {
+      "get": {
+        "summary": "Get employee documents",
+        "tags": ["Employee Documents"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Documents fetched successfully" }
+        }
+      }
+    },
+
+    "/api/employees/employee-documents/{id}": {
+      "delete": {
+        "summary": "Delete employee document",
+        "tags": ["Employee Documents"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Document deleted successfully" },
+          "404": { "description": "Document not found" }
         }
       }
     }
